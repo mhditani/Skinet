@@ -18,12 +18,8 @@ builder.Services.AddDbContext<StoreContext>(opt =>
     opt.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
 });
 
-
-
 // add a servive
 builder.Services.AddScoped<IProductRepository, ProductRepository>();
-
-
 
 var app = builder.Build();
 
@@ -40,20 +36,21 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-
-
 try
 {
     using var scope = app.Services.CreateScope();
     var services = scope.ServiceProvider;
     var context = services.GetRequiredService<StoreContext>();
     await context.Database.MigrateAsync();
-    await StoreContextSeed.SeedAsync(context);
+
+    var env = services.GetRequiredService<IWebHostEnvironment>();
+    var seedDataFilePath = Path.Combine(env.ContentRootPath, "..", "Infrastructure", "SeedData", "products.json");
+    await StoreContextSeed.SeedAsync(context, seedDataFilePath);
 }
 catch (Exception ex)
 {
     Console.WriteLine(ex);
-	throw;
+    throw;
 }
 
 app.Run();
